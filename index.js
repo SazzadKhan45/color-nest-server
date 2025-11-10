@@ -44,6 +44,20 @@ async function run() {
       }
     });
 
+    //Explore All artworks api
+    app.get("/explore-art", async (req, res) => {
+      try {
+        // Fetch 6 latest artworks
+        const cursor = artsCollection.find();
+        const result = await cursor.toArray();
+
+        res.send(result);
+      } catch (error) {
+        console.error("Error fetching homepage artworks:", error);
+        res.status(500).json({ message: "Failed to load homepage artworks" });
+      }
+    });
+
     // POST API
     app.post("/test", async (req, res) => {
       try {
