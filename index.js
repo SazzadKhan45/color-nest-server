@@ -26,9 +26,23 @@ async function run() {
     // Connect the client to the server
     await client.connect();
 
-    const db = client.db("Art_works");
+    const db = client.db("ArtifyNest_db");
     const artsCollection = db.collection("arts");
     const userCollection = db.collection("user");
+
+    // Get art api for home page
+    app.get("/homepage-art", async (req, res) => {
+      try {
+        // Fetch 6 latest artworks
+        const cursor = artsCollection.find().sort({ postedAt: -1 }).limit(6);
+        const result = await cursor.toArray();
+
+        res.send(result);
+      } catch (error) {
+        console.error("Error fetching homepage artworks:", error);
+        res.status(500).json({ message: "Failed to load homepage artworks" });
+      }
+    });
 
     // POST API
     app.post("/test", async (req, res) => {
