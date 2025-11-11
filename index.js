@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -28,7 +28,25 @@ async function run() {
 
     const db = client.db("ArtifyNest_db");
     const artsCollection = db.collection("arts");
+    const addGalleyCollection = db.collection("add_galley");
     const userCollection = db.collection("user");
+
+    // Post Art work Api
+    app.post("/explore-art", async (req, res) => {
+      try {
+        const newArt = req.body;
+        // Insert into MongoDB collection
+        const result = await artsCollection.insertOne(newArt);
+        res.send(result);
+      } catch (error) {
+        console.error("Error adding artwork:", error);
+        res.status(500).json({
+          success: false,
+          message: "Failed to add artwork",
+          error: error.message,
+        });
+      }
+    });
 
     // Get art api for home page
     app.get("/homepage-art", async (req, res) => {
@@ -58,15 +76,73 @@ async function run() {
       }
     });
 
-    // POST API
-    app.post("/test", async (req, res) => {
+    //Get art by id api
+    app.get("/explore-art/:id", async (req, res) => {
       try {
-        const data = req.body; // get data from frontend
-        const result = await artsCollection.insertOne(data);
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+
+        const result = await artsCollection.findOne(query);
+
+        if (!result) {
+          return res.status(404).json({ message: "Artwork not found" });
+        }
+
+        res.send(result);
+      } catch (error) {
+        console.error("Error fetching artwork by ID:", error);
+        res.status(500).json({ message: "Failed to fetch artwork" });
+      }
+    });
+
+    // Add gallery post api
+    app.post("/add-gallery", async (req, res) => {
+      const newAddGallery = req.body;
+      const result = await addGalleyCollection.insertOne(newAddGallery);
+      res.send(result);
+    });
+
+    // Get add gallery post api
+    app.get("/add-gallery", async (req, res) => {
+      try {
+        const email = req.query.email; // get email from query ?email=value
+
+        let query = {};
+        if (email) {
+          query = { userEmail: email };
+        }
+
+        const cursor = addGalleyCollection.find(query);
+        const result = await cursor.toArray();
         res.send(result);
       } catch (error) {
         console.error(error);
-        res.status(500).send({ message: "Error inserting data" });
+        res.status(500).send({ message: "Server error" });
+      }
+    });
+    // Add Gallery item delete api
+    app.delete("/add-gallery/:id", async (req, res) => {
+      try {
+        const artId = req.params.id;
+        const query = { id: artId };
+
+        const result = await addGalleyCollection.deleteOne(query);
+
+        if (result.deletedCount === 1) {
+          res.send({
+            success: true,
+            message: "Gallery item deleted successfully.",
+          });
+        } else {
+          res
+            .status(404)
+            .send({ success: false, message: "Gallery item not found." });
+        }
+      } catch (error) {
+        console.error(error);
+        res
+          .status(500)
+          .send({ success: false, message: "Server error while deleting." });
       }
     });
 
