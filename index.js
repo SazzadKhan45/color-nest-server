@@ -29,6 +29,7 @@ async function run() {
     const db = client.db("ArtifyNest_db");
     const artsCollection = db.collection("arts");
     const addGalleyCollection = db.collection("add_galley");
+    const myFavoritesCollection = db.collection("my-favorites");
     const userCollection = db.collection("user");
 
     // Post Art work Api
@@ -144,6 +145,26 @@ async function run() {
           .status(500)
           .send({ success: false, message: "Server error while deleting." });
       }
+    });
+
+    // Get Favorites api
+    app.get("/myFavorites", async (req, res) => {
+      try {
+        const email = req.query.email;
+        const query = email ? { email: email } : {};
+        const result = await myFavoritesCollection.find(query).toArray();
+        res.send(result);
+      } catch (error) {
+        console.error("Error fetching favorites:", error);
+        res.status(500).send({ error: "Internal Server Error" });
+      }
+    });
+
+    // MyFavorites post data api
+    app.post("/myFavorites", async (req, res) => {
+      const cursor = req.body;
+      const result = await myFavoritesCollection.insertOne(cursor);
+      res.send(result);
     });
 
     // Send a ping to confirm a successful connection
