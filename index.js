@@ -49,6 +49,29 @@ async function run() {
       }
     });
 
+    // Like or Unlike art
+    app.put("/like/:id", async (req, res) => {
+      try {
+        const artId = req.params.id;
+        const userEmail = req.body.email;
+        const query = { _id: new ObjectId(artId) };
+
+        console.log(artId, userEmail);
+
+        // Example placeholder for DB update:
+        // await artCollection.updateOne(query, { $addToSet: { likes: userEmail } });
+
+        res
+          .status(200)
+          .json({ success: true, message: "Like added successfully" });
+      } catch (error) {
+        console.error(error);
+        res
+          .status(500)
+          .json({ success: false, message: "Something went wrong" });
+      }
+    });
+
     // Get art api for home page
     app.get("/homepage-art", async (req, res) => {
       try {
@@ -97,10 +120,16 @@ async function run() {
     });
 
     // Add gallery post api
-    app.post("/add-gallery", async (req, res) => {
-      const newAddGallery = req.body;
-      const result = await addGalleyCollection.insertOne(newAddGallery);
-      res.send(result);
+    app.get("/gallery/:email", async (req, res) => {
+      try {
+        const userEmail = req.params.email;
+        const query = { email: userEmail };
+        const result = await artsCollection.find(query).toArray();
+        res.send(result);
+      } catch (error) {
+        console.error("Error fetching gallery data:", error);
+        res.status(500).send({ message: "Failed to fetch gallery data" });
+      }
     });
 
     // Get add gallery post api
@@ -119,31 +148,6 @@ async function run() {
       } catch (error) {
         console.error(error);
         res.status(500).send({ message: "Server error" });
-      }
-    });
-    // Add Gallery item delete api
-    app.delete("/add-gallery/:id", async (req, res) => {
-      try {
-        const artId = req.params.id;
-        const query = { id: artId };
-
-        const result = await addGalleyCollection.deleteOne(query);
-
-        if (result.deletedCount === 1) {
-          res.send({
-            success: true,
-            message: "Gallery item deleted successfully.",
-          });
-        } else {
-          res
-            .status(404)
-            .send({ success: false, message: "Gallery item not found." });
-        }
-      } catch (error) {
-        console.error(error);
-        res
-          .status(500)
-          .send({ success: false, message: "Server error while deleting." });
       }
     });
 
@@ -165,6 +169,56 @@ async function run() {
       const cursor = req.body;
       const result = await myFavoritesCollection.insertOne(cursor);
       res.send(result);
+    });
+
+    // Add Gallery item delete api
+    app.delete("/add-gallery/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const result = await artsCollection.deleteOne({
+          _id: new ObjectId(id),
+        });
+        if (result.deletedCount === 1) {
+          res.send({
+            success: true,
+            message: "Gallery item deleted successfully.",
+          });
+        } else {
+          res
+            .status(404)
+            .send({ success: false, message: "Gallery item not found." });
+        }
+      } catch (error) {
+        res
+          .status(500)
+          .send({ success: false, message: "Server error while deleting." });
+      }
+    });
+
+    // My Favorites art remove database api
+    app.delete("/myFavorites/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const query = { artId: id };
+
+        const result = await myFavoritesCollection.deleteOne(query);
+
+        if (result.deletedCount === 1) {
+          res.send({
+            success: true,
+            message: "Gallery item deleted successfully.",
+          });
+        } else {
+          res
+            .status(404)
+            .send({ success: false, message: "Gallery item not found." });
+        }
+      } catch (error) {
+        console.error(error);
+        res
+          .status(500)
+          .send({ success: false, message: "Server error while deleting." });
+      }
     });
 
     // Send a ping to confirm a successful connection
