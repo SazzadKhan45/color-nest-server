@@ -50,25 +50,32 @@ async function run() {
     });
 
     // Like or Unlike art
-    app.put("/like/:id", async (req, res) => {
-      try {
-        const artId = req.params.id;
-        const userEmail = req.body.email;
-        const query = { _id: new ObjectId(artId) };
+    app.patch("/artData/like/:id", async (req, res) => {
+      const id = req.params.id;
+      const userEmail = req.body.email;
 
-        console.log(artId, userEmail);
+      const query = { _id: new ObjectId(id) };
+      const alreadyLiked = await artsCollection.findOne({
+        _id: new ObjectId(id),
+        likedBy: userEmail,
+      });
 
-        // Example placeholder for DB update:
-        // await artCollection.updateOne(query, { $addToSet: { likes: userEmail } });
-
-        res
-          .status(200)
-          .json({ success: true, message: "Like added successfully" });
-      } catch (error) {
-        console.error(error);
-        res
-          .status(500)
-          .json({ success: false, message: "Something went wrong" });
+      if (alreadyLiked) {
+        // If user already liked, remove their like
+        const updateDoc = {
+          $inc: { likeCount: +1 },
+          $pull: { likedBy: userEmail },
+        };
+        await artsCollection.updateOne(query, updateDoc);
+        return res.send({ message: "Like removed" });
+      } else {
+        // If not liked yet
+        const updateDoc = {
+          $inc: { likeCount: 1 },
+          $push: { likedBy: userEmail },
+        };
+        await artsCollection.updateOne(query, updateDoc);
+        return res.send({ message: "Liked successfully" });
       }
     });
 
